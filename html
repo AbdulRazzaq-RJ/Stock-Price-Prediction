@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stock Price Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="background">
+    <div class="card">
+      <h1>📊 Stock Price Predictor</h1>
+      <form id="predictForm">
+        <input type="text" id="ticker" name="ticker" placeholder="Enter Stock Ticker (e.g., AAPL)" required />
+        <button type="submit">📈 Predict</button>
+      </form>
+      <div id="loader" class="hidden">🔄 Predicting...</div>
+      <div id="output" class="output-card"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("predictForm");
+    const loader = document.getElementById("loader");
+    const output = document.getElementById("output");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loader.classList.remove("hidden");
+      output.innerHTML = "";
+
+      const ticker = document.getElementById("ticker").value;
+      const res = await fetch("/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ticker })
+      });
+
+      const data = await res.json();
+      loader.classList.add("hidden");
+      output.innerHTML = `
+        <h3>✅ Prediction for ${ticker.toUpperCase()}</h3>
+        <pre>${data.prediction}</pre>
+      `;
+    });
+  </script>
+</body>
+</html>
