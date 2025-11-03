@@ -2,20 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Stock Price Predictor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stock Price Predictor</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <div class="background">
     <div class="card">
       <h1>📊 Stock Price Predictor</h1>
-      <form id="predictForm">
+      <form id="predictForm" autocomplete="off">
         <input type="text" id="ticker" name="ticker" placeholder="Enter Stock Ticker (e.g., AAPL)" required />
         <button type="submit">📈 Predict</button>
       </form>
+
       <div id="loader" class="hidden">🔄 Predicting...</div>
       <div id="output" class="output-card"></div>
+      <div id="error" class="error hidden"></div>
     </div>
   </div>
 
@@ -23,27 +25,50 @@
     const form = document.getElementById("predictForm");
     const loader = document.getElementById("loader");
     const output = document.getElementById("output");
+    const errorDiv = document.getElementById("error");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       loader.classList.remove("hidden");
       output.innerHTML = "";
+      errorDiv.classList.add("hidden");
+      errorDiv.textContent = "";
 
-      const ticker = document.getElementById("ticker").value;
-      const res = await fetch("/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ ticker })
-      });
+      const ticker = document.getElementById("ticker").value.trim();
+      if (!ticker) {
+        errorDiv.textContent = "⚠️ Please enter a valid stock ticker.";
+        errorDiv.classList.remove("hidden");
+        loader.classList.add("hidden");
+        return;
+      }
 
-      const data = await res.json();
-      loader.classList.add("hidden");
-      output.innerHTML = `
-        <h3>✅ Prediction for ${ticker.toUpperCase()}</h3>
-        <pre>${data.prediction}</pre>
-      `;
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ticker }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server returned status ${res.status}`);
+        }
+
+        const data = await res.json();
+        loader.classList.add("hidden");
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        output.innerHTML = `
+          <h3>✅ Prediction for ${ticker.toUpperCase()}</h3>
+          <pre>${data.prediction}</pre>
+        `;
+      } catch (err) {
+        loader.classList.add("hidden");
+        errorDiv.textContent = `❌ Error: ${err.message || "Something went wrong."}`;
+        errorDiv.classList.remove("hidden");
+      }
     });
   </script>
 </body>
